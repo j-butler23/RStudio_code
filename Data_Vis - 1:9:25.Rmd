@@ -1,0 +1,81 @@
+---
+title: "Data_Vis - 1/9/25"
+output: github_document
+date: "2025-01-09"
+---
+
+```{r}
+library(palmerpenguins)
+library(tidyverse)
+```
+# how many rows are in penguins?
+```{r}
+nrow(penguins)
+ncol(penguins)
+```
+##What does bill_depth_mm mean?
+```{r}
+?penguins
+```
+#make a scatter plot of bill depth vs bill length and what is the relationship between them?
+```{r}
+ggplot(
+   penguins,
+   aes(x = bill_length_mm, y = bill_depth_mm, color = species)
+   ) +
+   geom_point() +
+   geom_smooth(method = 'lm', se = F)
+```
+
+#scatter plot bill depth and species
+```{r}
+ggplot(
+   penguins,
+   aes(x = bill_depth_mm, y = species, color = species)
+   ) +
+   geom_boxplot()
+```
+
+#troubleshooting problem
+```{r}
+ggplot(data = penguins, aes(x=bill_length_mm, y=bill_depth_mm)) + 
+  geom_point(outl.rm = T)
+```
+
+#what does na.rm do? It removes your na values; by default it normally does not remove them
+
+#using labs() function -- labels things
+```{r}
+ggplot(data = penguins, aes(x=bill_length_mm, y=bill_depth_mm)) + 
+  geom_point() + 
+  labs(
+    title = "Data from palmerpenguins",
+    subtitle = "Penguins are dope"
+  )
+```
+
+#Recreating a plot
+```{r}
+ggplot(penguins, aes(x=flipper_length_mm, y=body_mass_g)) + 
+  geom_point(aes(color = bill_depth_mm)) +
+  geom_smooth() 
+```
+
+#recreting plot with different color scheme
+```{r}
+ggplot(penguins, aes(x=flipper_length_mm, y=body_mass_g, colour = bill_depth_mm)) + 
+  geom_point() +
+  geom_smooth() 
+```
+
+#run this block of code and predict what it does
+```{r}
+ggplot(
+      data = penguins,
+      mapping = aes(x = flipper_length_mm, y = body_mass_g, color = island)
+    ) +
+      geom_point() +
+      geom_smooth(se = FALSE) +
+      labs(
+        title = "This graph is ugly")
+```

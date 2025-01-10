@@ -2,6 +2,8 @@
 title: "Data_Vis - 1/9/25"
 output: github_document
 date: "2025-01-09"
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r}
@@ -78,4 +80,83 @@ ggplot(
       geom_smooth(se = FALSE) +
       labs(
         title = "This graph is ugly")
+```
+
+#Will these two graphs look different? Why/why not? - both make the same looking graph
+```{r}
+ggplot(
+  data = penguins,
+  mapping = aes(x = flipper_length_mm, y = body_mass_g)
+) +
+  geom_point() +
+  geom_smooth()
+```
+
+#Second peice of code
+```{r}
+ggplot() +
+  geom_point(
+    data = penguins,
+    mapping = aes(x = flipper_length_mm, y = body_mass_g)
+  ) +
+  geom_smooth(
+    data = penguins,
+    mapping = aes(x = flipper_length_mm, y = body_mass_g)
+  )
+```
+
+#Why are the points not blue? -- anything put in aes(), treated as argument therefore blue is treated as a category. Need to put color = 'blue' in geom_point() or geom_smooth() which will either make the points blue or the treadline blue
+```{r}
+ggplot(
+    data = penguins, 
+    mapping = aes(x = bill_length_mm, y = bill_depth_mm, color = 'blue')
+) +
+    geom_point() + geom_smooth(method = "lm")
+
+#Refined code
+ggplot(
+    data = penguins, 
+    mapping = aes(x = bill_length_mm, y = bill_depth_mm)
+) +
+    geom_point() + geom_smooth(method = "lm", color = 'blue')
+```
+
+#How do you bump up the point size? And increase transparency of the points?
+```{r}
+ggplot(
+    data = penguins, 
+    mapping = aes(x = bill_length_mm, y = bill_depth_mm)
+) +
+    geom_point(
+      size = 2,
+      alpha = 0.5, #alpha changes the transparency of points
+    ) + geom_smooth(method = "lm", color = 'blue')
+```
+
+#Make a bar plot of species of penguins, where you assign species to the y aesthetic. How is this plot different? -- orientation is different
+```{r}
+ggplot(
+  penguins,
+  aes(y = fct_infreq(species))
+) +
+  geom_bar()
+```
+
+#How are the following two plots different? Which aesthetic, color or fill, is more useful for changing the color of bars? -- color just outlines when using bar graph, but when using fill() this changes the entire color of the bar graph
+```{r}
+ggplot(penguins, aes(x = species)) +
+  geom_bar(color = "red")
+
+ggplot(penguins, aes(x = species)) +
+  geom_bar(fill = "red")
+```
+
+#What does the bins argument in geom_histogram() do? -- specifies the width of the bins
+```{r}
+ggplot(
+  penguins,
+  aes(x = body_mass_g)
+) +
+  geom_histogram(binwidth = 2)
+library(diamonds)
 ```

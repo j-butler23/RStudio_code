@@ -1,0 +1,64 @@
+---
+title: "Data Manip week 3"
+format: html
+editor: visual
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## 3.2.5 exercises
+
+1.  arrival delay of two or more hours
+    1.  Flew to houston (IAH or HOU)
+
+```{r}
+library(tidyverse)
+library(nycflights13)
+```
+
+```{r}
+flights |>
+  #filter(arr_delay >= 120) |>
+  #filter(dest %in% c("IAH", "HOU")) this way will also work. Use when looking for multiple things of a different name in the same column
+  filter(dest == "HOU" | dest == "IAH")
+
+```
+
+3.   Departed in the summer
+
+    ```{r}
+    filter(flights, month %in% c(7,8,9))
+
+    ```
+
+4.  Arrive more than two hours late but didn't leave late
+
+    ```{r}
+    filter(flights, arr_delay > 120 & dep_delay <= 0)
+    ```
+
+5.  Were delayed by at least an hour, but made up over 30 minutes in flights
+
+    ```{r}
+    filter(flights, dep_delay > 60 & dep_delay - arr_delay > 30)
+    ```
+
+6.  Departed between 12am and 6am
+
+    ```{r}
+    filter(flights, dep_time >= 0000 & dep_time <= 0600)
+    ```
+
+7.  Find the missing departure times
+
+    ```{r}
+    filter(flights, is.na(dep_time))
+    ```
+
+8.  Use arrange() to make all NA dep_times float to the top
+
+    ```{r}
+    arrange(flights, desc(is.na(dep_time)))
+    ```

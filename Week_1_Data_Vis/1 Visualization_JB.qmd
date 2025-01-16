@@ -1,0 +1,197 @@
+---
+title: "1 Visualization"
+author: "RSR"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(palmerpenguins)
+```
+
+# 1.2.5 Exercises
+
+1.  How many rows are in `penguins`? How many columns?
+
+    ```{r}
+    nrow(penguins)
+    ```
+
+2.  What does the `bill_depth_mm` variable in the `penguins` data frame describe? Read the help for `?penguins` to find out.
+
+    ```{r}
+    ?penguins
+    #bill_depth_mm: a number denoting bill depth (millimeters)
+    ```
+
+3.  Make a scatterplot of `bill_depth_mm` vs. `bill_length_mm`. That is, make a scatterplot with `bill_depth_mm` on the y-axis and `bill_length_mm` on the x-axis. Describe the relationship between these two variables.
+
+    ```{r}
+    ggplot(
+      penguins,
+      aes(x = bill_length_mm, y = bill_depth_mm)
+    ) +
+      geom_point()
+    #The relationship is linear.
+    ```
+
+    Interesting. What does the trend line look like?
+
+    ```{r}
+    ggplot(
+      penguins,
+      aes(x = bill_length_mm, y = bill_depth_mm)
+    ) +
+      geom_point() +
+      geom_smooth(method = 'lm')
+
+    #The trend line looks to have a slightly negative slope which does not appear to be expected as by looking at the data, it seems as if it would have a positive slope (i.e. a positive correlation)
+    ```
+
+    You might notice that the trend is not what you would expect. Try breaking out by species and see if you notice anything interesting!\
+
+    ```{r}
+    ggplot(
+      penguins,
+      aes(x = bill_length_mm, y = bill_depth_mm, color = species)
+    ) +
+      geom_point() +
+      geom_smooth(method = 'lm')
+    ```
+
+    This is an example of Simpson's paradox!
+
+4.  What happens if you make a scatterplot of `species` vs. `bill_depth_mm`? What might be a better choice of geom?
+
+    ```{r}
+    ggplot(
+      penguins,
+      aes(x = species, y = bill_depth_mm, color = species)
+    ) +
+      geom_boxplot()
+    #use geom_boxplot() instead of geom_point(). 
+    ```
+
+5.  Why does the following give an error and how would you fix it?
+
+    ```{r, e}
+    #| eval: false
+    ggplot(data = penguins) + 
+      geom_point()
+    #This line of code does not work because geom_point() requires variables to be specified in order to make a scatterplot. In ggplot() we call our data, but we do not specify what is the x and y variables for geom_point() to handle. I'd fix this by specifying x and y variables in the aes() function call within the ggplot() function.
+    ```
+
+6.  What does the `na.rm` argument do in [`geom_point()`](https://ggplot2.tidyverse.org/reference/geom_point.html)? What is the default value of the argument? Create a scatterplot where you successfully use this argument set to `TRUE`.
+
+    ```{r}
+    #na.rm removes na values in the data frame and provides a warning. By default it is set to FALSE. If it is set to TRUE, then it removes the values without any warning.
+    ggplot(
+      penguins,
+      aes(x = body_mass_g, y = flipper_length_mm, color = species)
+    ) +
+      geom_point(na.rm = TRUE)
+    ```
+
+7.  Add the following caption to the plot you made in the previous exercise: "Data come from the palmerpenguins package." Hint: Take a look at the documentation for [`labs()`](https://ggplot2.tidyverse.org/reference/labs.html).
+
+    ```{r}
+    ggplot(
+      penguins,
+      aes(x = body_mass_g, y = flipper_length_mm, color = species)
+    ) +
+      geom_point(na.rm = TRUE) +
+      labs(
+        title = 'Data come from the palmerpenguins package')
+    ```
+
+8.  Recreate the following visualization. What aesthetic should `bill_depth_mm` be mapped to? And should it be mapped at the global level or at the geom level?
+
+    ![](https://r4ds.hadley.nz/data-visualize_files/figure-html/unnamed-chunk-17-1.png)
+
+    ```{r}
+    ggplot(
+      penguins,
+      aes(x = flipper_length_mm, y = body_mass_g)
+    ) +
+      geom_point(aes(colour = bill_depth_mm)) +
+      geom_smooth()
+    #bill_depth_mm should be mapped to color inside the aes() function. In this example, it does not matter if color = bill_depth_mm is at the global or local level.
+    ```
+
+9.  Run this code in your head and predict what the output will look like. Then, run the code in R and check your predictions.
+
+    ```         
+    ggplot(
+      data = penguins,
+      mapping = aes(x = flipper_length_mm, y = body_mass_g, color = island)
+    ) +
+      geom_point() +
+      geom_smooth(se = FALSE)
+    ```
+
+    ```{r}
+    ggplot(
+      data = penguins,
+      mapping = aes(x = flipper_length_mm, y = body_mass_g, color = island)
+    ) +
+      geom_point() +
+      geom_smooth(se = FALSE)
+    #my predictions were wrong because I thought there would be one line of best fit. I forgot that color = island was specified at the global level which will cause each different color to get its own treadline.
+    ```
+
+10. Will these two graphs look different? Why/why not?
+
+````         
+```         
+ggplot(
+  data = penguins,
+  mapping = aes(x = flipper_length_mm, y = body_mass_g)
+) +
+  geom_point() +
+  geom_smooth()
+
+ggplot() +
+  geom_point(
+    data = penguins,
+    mapping = aes(x = flipper_length_mm, y = body_mass_g)
+  ) +
+  geom_smooth(
+    data = penguins,
+    mapping = aes(x = flipper_length_mm, y = body_mass_g)
+  )
+```
+````
+
+```{r}
+ggplot(
+  data = penguins,
+  mapping = aes(x = flipper_length_mm, y = body_mass_g)
+) +
+  geom_point() +
+  geom_smooth()
+
+ggplot() +
+  geom_point(
+    data = penguins,
+    mapping = aes(x = flipper_length_mm, y = body_mass_g)
+  ) +
+  geom_smooth(
+    data = penguins,
+    mapping = aes(x = flipper_length_mm, y = body_mass_g)
+  )
+```
+
+# Extras:
+
+Why are the points not blue?
+
+```{r}
+ggplot(
+    data = penguins, 
+    mapping = aes(x = bill_length_mm, y = bill_depth_mm, color = "blue")
+) +
+    geom_point() + geom_smooth(method = "lm")
+```
+
+How do you bump up the point size? And increase transparency of the points?

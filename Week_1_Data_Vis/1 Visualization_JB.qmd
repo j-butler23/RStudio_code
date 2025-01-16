@@ -1,6 +1,6 @@
 ---
 title: "1 Visualization"
-author: "RSR"
+author: "Jack Butler"
 format: html
 editor: visual
 ---
@@ -16,6 +16,9 @@ library(palmerpenguins)
 
     ```{r}
     nrow(penguins)
+    #344 rows
+    ncol(penguins)
+    #8 columns
     ```
 
 2.  What does the `bill_depth_mm` variable in the `penguins` data frame describe? Read the help for `?penguins` to find out.
@@ -77,8 +80,8 @@ library(palmerpenguins)
 
     ```{r, e}
     #| eval: false
-    ggplot(data = penguins) + 
-      geom_point()
+    #ggplot(data = penguins) + 
+      #geom_point()
     #This line of code does not work because geom_point() requires variables to be specified in order to make a scatterplot. In ggplot() we call our data, but we do not specify what is the x and y variables for geom_point() to handle. I'd fix this by specifying x and y variables in the aes() function call within the ggplot() function.
     ```
 
@@ -116,7 +119,7 @@ library(palmerpenguins)
     ) +
       geom_point(aes(colour = bill_depth_mm)) +
       geom_smooth()
-    #bill_depth_mm should be mapped to color inside the aes() function. In this example, it does not matter if color = bill_depth_mm is at the global or local level.
+    #bill_depth_mm should be mapped to color inside the aes() function. In this example, it does not matter if color = bill_depth_mm is at the global or local level. However, it should likely be mapped to the local level.
     ```
 
 9.  Run this code in your head and predict what the output will look like. Then, run the code in R and check your predictions.
@@ -180,6 +183,7 @@ ggplot() +
     data = penguins,
     mapping = aes(x = flipper_length_mm, y = body_mass_g)
   )
+#No, these two graphs will not look any different. They will look the same because both aesthetics are being mapped to the same function. In the first instance they are being inherited from a global level, while in the second example they are being specified at the local level, but the inputs are still the same resulting in the same graph
 ```
 
 # Extras:
@@ -192,6 +196,19 @@ ggplot(
     mapping = aes(x = bill_length_mm, y = bill_depth_mm, color = "blue")
 ) +
     geom_point() + geom_smooth(method = "lm")
+#anything that you add in the aes() function modifies data variables. In this instance blue is not a variable in our data frame. When ggplot() encounters this it treats 'blue' as a variable thus creating a legend for blue.
 ```
 
 How do you bump up the point size? And increase transparency of the points?
+
+```{r}
+ggplot(
+    data = penguins, 
+    mapping = aes(x = bill_length_mm, y = bill_depth_mm, color = "blue")
+) +
+    geom_point(
+      size = 2, #size increases point size
+      alpha = 0.5, #alpha can change the transparancy of points. Range is between 0-1. Values closer to 0 are more transparent.
+    ) + 
+  geom_smooth(method = "lm")
+```

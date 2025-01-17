@@ -1,7 +1,8 @@
 ---
 title: "1 Visualization"
 author: "Jack Butler"
-format: html
+date: '1/17/25'
+format: pdf
 editor: visual
 ---
 
@@ -49,7 +50,10 @@ library(palmerpenguins)
       geom_point() +
       geom_smooth(method = 'lm')
 
-    #The trend line looks to have a slightly negative slope which does not appear to be expected as by looking at the data, it seems as if it would have a positive slope (i.e. a positive correlation)
+    #The trend line looks to have a slightly negative slope 
+    #which does not appear to be expected as by looking at 
+    #the data, it seems as if it would have a positive slope 
+    #(i.e. a positive correlation)
     ```
 
     You might notice that the trend is not what you would expect. Try breaking out by species and see if you notice anything interesting!\
@@ -78,17 +82,26 @@ library(palmerpenguins)
 
 5.  Why does the following give an error and how would you fix it?
 
-    ```{r, e}
+    ```{r}
     #| eval: false
     #ggplot(data = penguins) + 
       #geom_point()
-    #This line of code does not work because geom_point() requires variables to be specified in order to make a scatterplot. In ggplot() we call our data, but we do not specify what is the x and y variables for geom_point() to handle. I'd fix this by specifying x and y variables in the aes() function call within the ggplot() function.
+    #This line of code does not work because geom_point() 
+    #requires variables to be specified in order to make 
+    #a scatterplot. In ggplot() we call our data, but 
+    #we do not specify what is the x and y variables 
+    #for geom_point() to handle. I'd fix this by 
+    #specifying x and y variables in the aes() function 
+    #call within the ggplot() function.
     ```
 
 6.  What does the `na.rm` argument do in [`geom_point()`](https://ggplot2.tidyverse.org/reference/geom_point.html)? What is the default value of the argument? Create a scatterplot where you successfully use this argument set to `TRUE`.
 
     ```{r}
-    #na.rm removes na values in the data frame and provides a warning. By default it is set to FALSE. If it is set to TRUE, then it removes the values without any warning.
+    #na.rm removes na values in the data frame and 
+    #provides a warning. By default it is set to FALSE. 
+    #If it is set to TRUE, then it removes the values 
+    #without any warning.
     ggplot(
       penguins,
       aes(x = body_mass_g, y = flipper_length_mm, color = species)
@@ -119,7 +132,11 @@ library(palmerpenguins)
     ) +
       geom_point(aes(colour = bill_depth_mm)) +
       geom_smooth()
-    #bill_depth_mm should be mapped to color inside the aes() function. In this example, it does not matter if color = bill_depth_mm is at the global or local level. However, it should likely be mapped to the local level.
+    #bill_depth_mm should be mapped to color inside 
+    #the aes() function. In this example, it does not 
+    #matter if color = bill_depth_mm is at the global 
+    #or local level. However, it should likely be 
+    #mapped to the local level.
     ```
 
 9.  Run this code in your head and predict what the output will look like. Then, run the code in R and check your predictions.
@@ -140,7 +157,11 @@ library(palmerpenguins)
     ) +
       geom_point() +
       geom_smooth(se = FALSE)
-    #my predictions were wrong because I thought there would be one line of best fit. I forgot that color = island was specified at the global level which will cause each different color to get its own treadline.
+    #my predictions were wrong because I thought 
+    #there would be one line of best fit. I forgot 
+    #that color = island was specified at the global 
+    #level which will cause each different color to 
+    #get its own treadline.
     ```
 
 10. Will these two graphs look different? Why/why not?
@@ -183,7 +204,13 @@ ggplot() +
     data = penguins,
     mapping = aes(x = flipper_length_mm, y = body_mass_g)
   )
-#No, these two graphs will not look any different. They will look the same because both aesthetics are being mapped to the same function. In the first instance they are being inherited from a global level, while in the second example they are being specified at the local level, but the inputs are still the same resulting in the same graph
+#No, these two graphs will not look any different. 
+#They will look the same because both aesthetics are 
+#being mapped to the same function. In the first instance 
+#they are being inherited from a global level, while 
+#in the second example they are being specified at the 
+#local level, but the inputs are still the same 
+#resulting in the same graph
 ```
 
 # Extras:
@@ -196,7 +223,11 @@ ggplot(
     mapping = aes(x = bill_length_mm, y = bill_depth_mm, color = "blue")
 ) +
     geom_point() + geom_smooth(method = "lm")
-#anything that you add in the aes() function modifies data variables. In this instance blue is not a variable in our data frame. When ggplot() encounters this it treats 'blue' as a variable thus creating a legend for blue.
+#anything that you add in the aes() function modifies 
+#data variables. In this instance blue is not a variable 
+#in our data frame. When ggplot() encounters this it 
+#treats 'blue' as a variable thus creating a legend 
+#for blue.
 ```
 
 How do you bump up the point size? And increase transparency of the points?
@@ -208,7 +239,9 @@ ggplot(
 ) +
     geom_point(
       size = 2, #size increases point size
-      alpha = 0.5, #alpha can change the transparancy of points. Range is between 0-1. Values closer to 0 are more transparent.
+      alpha = 0.5, #alpha can change the transparancy of points. 
+      #Range is between 0-1. 
+      #Values closer to 0 are more transparent.
     ) + 
   geom_smooth(method = "lm")
 ```

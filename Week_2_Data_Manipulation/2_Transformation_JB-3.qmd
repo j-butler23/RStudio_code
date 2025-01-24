@@ -82,19 +82,73 @@ arrange(flights, desc(is.na(dep_time)))
 ```
 
 2.  Sort flights to find the most delayed flights. Find the flights that left earliest in the morning.
-3.  Sort flights to find the fastest (highest speed) flights.
-4.  Was there a flight on every day of 2013?
 
-<!-- -->
+```{r}
+#most delayed flights
+arrange(flights, arr_delay)
+
+#left the earliest
+arrange(flights, dep_time) #not sure if this is right?
+```
+
+2.  Sort flights to find the fastest (highest speed) flights.
+
+```{r}
+arrange(flights, (distance/air_time))
+```
+
+2.  Was there a flight on every day of 2013?
+
+```{r}
+distinct(flights, year, month, day)
+#yes there was a flight
+#on everyday of 2013
+```
 
 5.  Which flights traveled the farthest? Which traveled the shortest?
+
+```{r}
+farthest_traveled <- arrange(flights, desc(distance))
+distinct(count(farthest_traveled, distance))
+# 342 filghts traveled 4983mi
+# 1 flight traveled 17mi
+```
 
 # 3.3.5 Exercises
 
 1.  Compare `dep_time`, `sched_dep_time`, and `dep_delay`. How would you expect those three numbers to be related?
 
+    ```{r}
+    select(flights, dep_time, sched_dep_time, dep_delay)
+    #I'd expect these numbers to be close
+    #to one another, if not the same.
+    #It is normal for flights to leave
+    #late or leave early. If dep_time
+    #and sched_dep_time are differnt,
+    #then I'd expect dep_delay to be
+    #the difference between those two
+    #times.
+    # the times are in military time
+    ```
+
 2.  Currently `dep_time` and `sched_dep_time` are convenient to look at, but hard to compute with because they’re not really continuous numbers. Convert them to a more convenient representation of number of minutes since midnight, called `dep_minute` as a new column.
+
+    ```{r}
+    dep_minute_change <- mutate(
+          flights,
+          dep_minute = ((dep_time %/% 100) * 60) + (dep_time %% 100),
+          sched_dep_minute = ((sched_dep_time %/% 100) * 60) + (sched_dep_time %% 100),
+          .before = 1
+    )
+    arrange(dep_minute_change, desc(dep_minute))
+    #1440 makes sense since 24hrs x 60 min
+    #equals 1,440 minutes
+    ```
 
     (Hint: you can pull out digits using the `%%` remainder operator and the `%/%` integer division operator. Take a time, like `515`, and integer divide by 100. Then take the remainder. Do you see how these can be used to construct the minutes since midnight?)
 
 3.  Now, redo the first problem using the calculations you worked out in #2. Does this way work better?
+
+```{r}
+select(dep_minute_change, dep_minute, sched_dep_minute, dep_delay)
+```

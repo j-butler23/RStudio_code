@@ -1,7 +1,7 @@
 ---
 title: "2 Transformation"
 author: "Jack Butler"
-date: 
+date: "1/24/25"
 format: pdf
 editor: visual
 ---
@@ -128,7 +128,13 @@ distinct(count(farthest_traveled, distance))
     #then I'd expect dep_delay to be
     #the difference between those two
     #times.
-    # the times are in military time
+
+    # Calculation of dep_delay
+    flights |>
+      mutate(calc_dep_delay = dep_time - sched_dep_time,
+             isequal = dep_delay == calc_dep_delay,
+             .after = dep_delay,
+             .keep = "used")
     ```
 
 2.  Currently `dep_time` and `sched_dep_time` are convenient to look at, but hard to compute with because they’re not really continuous numbers. Convert them to a more convenient representation of number of minutes since midnight, called `dep_minute` as a new column.

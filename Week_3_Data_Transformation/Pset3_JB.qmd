@@ -1,0 +1,90 @@
+---
+title: "Week 3 Problem Set: Looking at gene expression (RNA-seq) data"
+author: "Jack Butler"
+date: 
+format: html
+editor: visual
+---
+
+```{r load_data}
+library(tidyverse)
+library(patchwork) # Plot arrangements: https://r-charts.com/ggplot2/combining-plots/
+# Set theme to scientific standard -- white background
+theme_set(theme_classic())
+```
+
+1.  Read in RNA data from Muhlhofer_2019_rnaseq.tsv file into a tibble.
+
+```{r}
+rna_seq_data <- read_tsv("~/Desktop/Github/RStudio/RStudio_code/Week_3_Data_Transformation/Muhlhofer_2019_rnaseq-1.tsv", comment = '#')
+```
+
+2.  Filter the data to get the first RNA control dataset (25C).
+
+```{r}
+filter(rna_seq_data, sample == "25C.control.Rep1")
+```
+
+3.  Now filter both replicates using %in%.
+
+```{r}
+rna_filterd <- filter(rna_seq_data, sample %in% c("25C.control.Rep1", "25C.control.Rep2"))
+rna_filterd
+```
+
+4.  Plot the densities.
+
+```{r}
+rep1_rep2 <- rna_seq_data %>%
+  filter(sample %in% c("25C.control.Rep1", "25C.control.Rep2"),
+    ) %>%
+  ggplot(mapping = aes(x = TPM, color = sample)) +
+  geom_density()
+rep1_rep2
+```
+
+5.  Plot the densities on a log scale!
+
+```{r}
+log_dens <- rep1_rep2 + scale_x_log10()
+```
+
+6.  Show both plots stacked using the patchwork library.
+
+```{r}
+rep1_rep2 + log_dens + plot_layout(nrow = 2)
+```
+
+7.  Calculate the mean of the control RNA levels.
+
+```{r}
+mean_rna_levels <- rna_filterd %>%
+                      group_by(sample) %>%
+                      summarise(mean_TPM = mean(TPM, na.rm = T))
+mean_rna_levels
+```
+
+8.  Plot the means as vertical dotted lines on the log-transformed plot.
+
+```{r}
+log_dens + geom_vline(data = mean_rna_levels, 
+                      mapping = aes(xintercept = mean_TPM), linetype = 3)
+```
+
+9.  Plot only the mean plus or minus 3 standard deviations on the x-axis...on a log scale! (Hint: calculate the sd first)
+
+```{r}
+something <- rna_filterd %>%
+  filter(TPM > 0) %>%
+  mutate(
+    log_TPM = log(TPM)
+  ) %>%
+  summarise(mean_TPM = mean(log_TPM, na.rm = T),
+            sd_TPM = sd(log_TPM))
+something
+
+ggplot(data = rna_filterd,
+       mapping = aes(x = TPM, color = sample)) +
+  geom_density() +
+  scale_x_log10(limits = c(exp(something$mean_TPM - 3 * something$sd_TPM), exp(something$mean_TPM + 3 * something$sd_TPM))) 
+```

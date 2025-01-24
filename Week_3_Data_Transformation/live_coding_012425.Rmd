@@ -1,0 +1,75 @@
+---
+title: "live_coding_12425"
+author: "Jack Butler"
+output: pdf_document
+date: "2025-01-24"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(nycflights13)
+library(tidyverse)
+```
+
+```{r}
+summarise(flights, delay = n())#mean(dep_delay, na.rm = TRUE))
+#use na.rm = TRUE allows for value to be calculated, because in df there are NA values
+```
+
+```{r}
+by_day <- group_by(flights, year, month, day)
+summarise(by_day, delay = mean(dep_delay, na.rm = TRUE))
+#
+```
+Find the relationship between average distance and averave delay for each destination
+* group flights by destination
+* summarize to compute distance, average delay, num flights
+* Filter, to remove noisy points such as Honolulu airport
+```{r}
+delays <- flights %>% #this symbol is called a pipe
+  #treat as 'and then' in english
+  group_by(dest) %>%
+  #in the next line it will pass the result of this function
+  #which creates a new df, and allow you to compute some 
+  #other functions
+  #will lose a lot of columns when you use group_by
+  summarise( #we want to make these three columns: count, dist and delay
+    count = n(), #n() goes through all of the rows, and tells
+    #you the count of each occurence
+    dist = mean(distance, na.rm = T),
+    delay = mean(arr_delay, na.rm = T)
+  ) %>%
+  filter(dest != 'HNL')
+delays
+```
+
+```{r}
+not_cancelled <- flights %>%
+  filter(!is.na(dep_delay), !is.na(arr_delay))
+
+delays_2 <- not_cancelled %>%
+  group_by(tailnum) %>%
+  summarise(
+    delay = mean(arr_delay),
+    count = n()
+  ) %>%
+  filter(count > 25) %>%
+    ggplot(
+      mapping = aes(y = delay, x = count)) +
+        geom_point(alpha = 0.3)
+delays_2
+```
+
+# Chap 7.3, 7.7
+```{r}
+ggplot(data = diamonds, mapping = aes(x = carat)) +
+  geom_histogram(binwidth = 0.5)
+```
+
+```{r}
+diamonds %>%
+  filter(carat < 3) %>%
+  ggplot(mapping = aes(x = carat, color = cut)) +
+  geom_freqpoly(binwidth = 0.5)
+```
+

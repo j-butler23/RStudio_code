@@ -1,0 +1,81 @@
+---
+title: "Week 4 Problem Set: Correlations"
+author: "Jack Butler"
+format: pdf
+editor: visual
+---
+
+```{r load_data}
+library(tidyverse)
+library(patchwork) # Plot arrangements: https://r-charts.com/ggplot2/combining-plots/
+# Set theme to scientific standard -- white background
+theme_set(theme_classic())
+library(ggrepel) # Labeled elements don't overlap with each other
+```
+
+1.  Read in RNA data and protein data from Lahtvee et al. (2017) study (lahtvee17-mrna-data.txt, lahtvee17-protein-data.txt), along with the gene name/description data from scerevisiae-gene-data.txt.
+
+```{r}
+rna_data <- read_tsv("/Users/jbutler/Desktop/Github/RStudio/RStudio_code/Week_4_Correlations/lahtvee17-mrna-data.txt", comment = '#')
+prot_data <- read_tsv("/Users/jbutler/Desktop/Github/RStudio/RStudio_code/Week_4_Correlations/lahtvee17-protein-data.txt", comment = '#')
+genes <- read_tsv("/Users/jbutler/Desktop/Github/RStudio/RStudio_code/Week_4_Correlations/scerevisiae-gene-data.txt", comment = '#')
+```
+
+2.  Combine these into a single tibble with four columns: ORF (open reading frame identifier), gene (common gene name), mrna, and protein. Filter so that this tibble contains only entries with non-NA mRNA and protein values.
+
+```{r}
+select_genes <- genes |> select(ORF, gene)
+combined_genes_prot <- select_genes |> inner_join(prot_data, by = "ORF")
+combined_df <- combined_genes_prot |> inner_join(rna_data, by = "ORF")
+final_df <- combined_df |> filter(!is.na(mRNA) & !is.na(protein))
+
+```
+
+3.  Plot protein abundance versus mRNA level -- mRNA on the x axis. Use log transformations on each axis.
+
+```{r}
+ggplot(
+  data = final_df,
+  aes(x=mRNA, y=protein))+ geom_point() + scale_x_log10() + scale_y_log10()
+```
+
+4.  Calculate the Pearson correlation between mRNA and protein levels. Use the Pearson correlation.
+
+```{r}
+pearson_cor <- cor(final_df$mRNA, final_df$protein, method = 'p')
+
+pearson_cor
+```
+
+5.  Make a tibble containing only genes with both mRNA and protein values. Calculate the Spearman correlation between mRNA and protein. Use mutate to create ranked mRNA and protein values using rank(). Calculate the Pearson correlation between the ranks. How does this compare to the Spearman correlation?
+
+```{r}
+ranked_df <- final_df |> mutate(protein_rank = rank(protein), rna_rank = rank(mRNA))
+spearman <- cor(final_df$protein, final_df$mRNA, method = 'spearman')
+ranked_pearson_cor <- cor(ranked_df$protein_rank, ranked_df$rna_rank, method = 'p')
+c(spearman, ranked_pearson_cor)
+
+#they are the same becuase you are doing p correlation on a data set that has already been ranked
+```
+
+6.  Plot mRNA versus protein. Label the top 10 mRNAs by abundance with larger blue points, and the top 10 proteins by abundance with larger orange points. Label all of these top-10 points (both mRNA and protein) with their common name (gene column) using gg_text_repel.
+
+```{r}
+top_10_mRNA <- ranked_df |> arrange(desc(mRNA)) |> slice(1:10)
+
+top_10_protein <- ranked_df |> arrange(desc(protein)) |> slice(1:10)
+
+ggplot(
+  data = final_df,
+  aes(x=mRNA, y=protein))+ geom_point(alpha = 0.3) + scale_x_log10() + scale_y_log10() + geom_point(data = top_10_mRNA, color = 'blue', size = 2, alpha = 0.5) + geom_point(data = top_10_protein, color = 'red', size = 3, alpha = 0.5) + geom_text_repel(data = top_10_mRNA, aes(label = gene), size = 4) + geom_text_repel(data = top_10_protein, aes(label = gene))
+```
+
+7.  What do you notice about the two lists of top-10 genes? Provide at a biological and a non-biological explanation for the result.
+
+    #The two groups are not perfectly correlated. A biological reason could due to the post-transcriptional regulation of mRNA transcripts which could affect the rate at which these transcripts are transcribed into protein. A non-biological reason could be attributed to experimental noise.
+
+8.  Bonus 1: Show by randomization that the probability of seeing a correlation as high as we observe here is less than 0.0001.
+
+```{r}
+
+```

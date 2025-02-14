@@ -1,0 +1,203 @@
+---
+title: "Functions"
+author: "Jack Butler"
+date: "2/14/24"
+format: pdf
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(dplyr)
+```
+
+# 25 Functions
+
+## 25.2.5
+
+1.  Turn the following code snippets into functions. Think about what
+    each function does. What would you call it? How many arguments does
+    it need? Can you rewrite it to be more expressive or less
+    duplicative? Show the usage of your function and ensure it returns
+    the expected results.
+
+```         
+mean(is.na(x))
+mean(is.na(y))
+mean(is.na(z))
+```
+
+```{r}
+#mean(is.na(x)) is taking the mean # of NA
+#numbers within the variable x
+mean_NAs <- function(vec){
+  mean(is.na(vec))
+}
+
+x <- c(55, 65, 75, NA, 90)
+y <- c(1, NA, 3, NA, NA)
+z <- c(1, NA, NA, NA, NA)
+
+print(mean_NAs(x))
+print(mean_NAs(y))
+print(mean_NAs(z))
+```
+
+```         
+x / sum(x, na.rm = TRUE)
+y / sum(y, na.rm = TRUE)
+z / sum(z, na.rm = TRUE)
+```
+
+```{r}
+#This function omits the NA values while
+#computing the average for x/y/z
+average_no_NAs <- function(vec, na.rm){
+  vec / sum(vec, na.rm = na.rm)
+}
+
+x <- c(55, 65, 75, NA, 90)
+y <- c(1, NA, 3, NA, NA)
+z <- c(1, NA, NA, NA, NA)
+
+print(average_no_NAs(x, TRUE))
+print(average_no_NAs(y, TRUE))
+print(average_no_NAs(z, TRUE))
+```
+
+```         
+round(x / sum(x, na.rm = TRUE) * 100, 1)
+round(y / sum(y, na.rm = TRUE) * 100, 1)
+round(z / sum(z, na.rm = TRUE) * 100, 1)
+```
+
+```{r}
+x = c(1, 20, 30, 40, NA)
+
+percentage_of_sum <- function(x, na.rm) {
+  round(x / sum(x, na.rm = na.rm) * 100, 2) #2 specifies the number of decimal places
+}
+sum(percentage_of_sum(x, TRUE), na.rm = TRUE)
+percentage_of_sum(x, TRUE)
+```
+
+```         
+# a single shot example
+sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE)
+```
+
+```{r}
+
+```
+
+
+4.  (Reserve for take home work) Write your own functions to compute the
+    variance and skewness of a numeric vector. You may look up the
+    definitions of these online. For variance, compare your function
+    with the result of the builtin `var()` function.
+
+```{r}
+compute_variance <- function(vec) {
+  non_NAs <- sum(!is.na(vec))  
+  if (non_NAs < 2) {
+    return(NA)  # Variance is undefined for n < 2
+  }
+  mean_value <- mean(vec, na.rm = TRUE)
+  sum_squared_diff <- sum((vec - mean_value)^2, na.rm = TRUE)
+  return(sum_squared_diff / (non_NAs - 1))
+}
+
+compute_skewness <- function(vec) {
+  non_NAs <- sum(!is.na(vec))  # Count of non-NA values
+  if (non_NAs < 3) {
+    return(NA)  # Skewness is undefined for n < 3
+  }
+  mean_value <- mean(vec, na.rm = TRUE)
+  sd_value <- sd(vec, na.rm = TRUE)
+  
+  if (sd_value == 0) {
+    return(NA)  # Skewness is undefined if standard deviation is 0
+  }
+  
+  sum_cubed_diff <- sum(((vec - mean_value) / sd_value)^3, na.rm = TRUE)
+  return((non_NAs / ((non_NAs - 1) * (non_NAs - 2))) * sum_cubed_diff)  # Sample skewness formula
+}
+
+
+x = c(55, 56, NA, 59, 60, NA, 61, NA)
+compute_variance(x)
+compute_skewness(x)
+```
+
+5.  write `both_na()`, a summary function that takes two vectors of the
+    same length and returns the number of positions that have NA in both
+    vectors. Again, test with some synthetic data.
+
+```{r}
+vector1 = c(1:5, NA, 6:10, NA, NA, 11:20)
+vector2 = c(1:5, NA, 6:10, NA, NA, 11:20)
+
+both_na <- function(vector1, vector2){
+  stopifnot(length(vector1) == length(vector2))
+  sum(is.na(vector1) & is.na(vector2))
+}
+both_na(vector1, vector2)
+```
+
+6.  (Potential take-home problem, depending on the pace of the session)
+    What do the following functions do? Why are they so useful even if
+    short? Also, the second example is written all on one line. Does
+    that function work? What does that tell you about the need for `{}`
+    characters when writing a function?
+
+```         
+is_directory <- function(x) {
+    file.info(x)$isdir
+}
+is_readable <- function(x) file.access(x, 4) == 0
+```
+
+## Function naming (for humans and computers)
+1.  Read the source code for each of the following three functions,
+    puzzle out what they do (perhaps with some test code that you show),
+    and then brainstorm better names.
+
+```{r}
+f1 <- function(string, prefix) {
+  substr(string, 1, nchar(prefix)) == prefix
+}
+```
+
+
+```{r}
+f2 <- function(x) {
+  if (length(x) <= 1) return(NULL)
+  x[-length(x)]
+}
+```
+
+
+```{r}
+f3 <- function(x, y) {
+  rep(y, length.out = length(x))
+}
+```
+
+
+## The infamous `fizzbuzz()`
+
+Implement a fizzbuzz function. It takes a single number as input. If the
+number is divisible by three, it returns “fizz”. If it’s divisible by
+five it returns “buzz”. If it’s divisible by three and five, it returns
+“fizzbuzz”. Otherwise, it returns the number as text. Make sure you
+first write working code before you create the function.
+
+```{r}
+x = 3
+print(x %% 5)
+fizzbuzz <- function(number){
+  if(number % 3)
+}
+```

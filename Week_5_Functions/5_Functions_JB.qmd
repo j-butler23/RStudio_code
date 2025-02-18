@@ -1,7 +1,7 @@
 ---
 title: "Functions"
 author: "Jack Butler"
-date: "2/14/24"
+date: "2/18/24"
 format: pdf
 editor: 
   markdown: 
@@ -156,7 +156,10 @@ both_na(vector1, vector2)
 is_directory <- function(x) {
     file.info(x)$isdir
 }
+#this function checks to see if a directory for x exists.
+
 is_readable <- function(x) file.access(x, 4) == 0
+#Yes, this function still works even if it is written on one line. The need for {} is only required when you are defining a function with more than one expression. In this example, the only expression is file.access(x, 4) == 0. If there were more expressions then {} would've been required for this function to work.
 ```
 
 ## Function naming (for humans and computers)
@@ -165,24 +168,59 @@ is_readable <- function(x) file.access(x, 4) == 0
     and then brainstorm better names.
 
 ```{r}
-f1 <- function(string, prefix) {
+startingOfString <- function(string, prefix) {
   substr(string, 1, nchar(prefix)) == prefix
 }
+
+
+startingOfString('world', 'string') #False
+startingOfString('world', 'world tour') #False
+startingOfString("world", "world") #True
+startingOfString("world", "world is weird") #False
+startingOfString("hello world", "hello") #True
+
+#This function checks to see if the parameter
+#string starts with the parameter prefix. If 
+#the beginning of the string starts with prefix
+#then it returns true, otherwise returns false
 ```
 
 
 ```{r}
-f2 <- function(x) {
+removeLastInt <- function(x) {
   if (length(x) <= 1) return(NULL)
   x[-length(x)]
 }
+
+test <- c(1,2)
+removeLastInt(test) #Return 1
+
+test2 <- c(1)
+removeLastInt(test2) #Returns null
+
+test3 <- c(1,5,10,15)
+removeLastInt(test3) #Returns 1,5,10
+
+#This function removes the last integer from a list
+#of values that is greater than a length of 1.
+#If the list of values is less than 1,
+#then it will return NULL
 ```
 
 
 ```{r}
-f3 <- function(x, y) {
+repeatY <- function(x, y) {
   rep(y, length.out = length(x))
 }
+
+doo <- c(1,2,3,4,5)
+repeatY(doo, 3) #Returns 3 3 3 3 3
+
+dee <- c('a', 'b', 'c', 'd')
+repeatY(dee, 5) #Returns 5 5 5 5
+
+#this function takes the length of x, and 
+#repeats y that many number of times
 ```
 
 
@@ -195,9 +233,24 @@ five it returns “buzz”. If it’s divisible by three and five, it returns
 first write working code before you create the function.
 
 ```{r}
-x = 3
-print(x %% 5)
-fizzbuzz <- function(number){
-  if(number % 3)
-}
+#x = 13
+#print(x %% 5) #the remainder of 13/5 is 3.
+fizzbuzz <- function(inputNumber){
+    if(inputNumber %% 3 == 0 & inputNumber %% 5 == 0){
+      return("fizzbuzz")
+        } else if(inputNumber %% 3 == 0) {
+          return("fizz")
+        } else if(inputNumber %% 5 == 0){
+          return("buzz")
+        } else {
+          return(as.character(inputNumber))
+        }
+  }
+
+
+
+fizzbuzz(15) #returns fizzbuzz
+fizzbuzz(9) #returns fizz
+fizzbuzz(10) #returns buzz
+fizzbuzz(8) #returns '8'
 ```

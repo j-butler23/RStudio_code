@@ -122,7 +122,7 @@ compute_skewness <- function(vec) {
   }
   
   sum_cubed_diff <- sum(((vec - mean_value) / sd_value)^3, na.rm = TRUE)
-  return((non_NAs / ((non_NAs - 1) * (non_NAs - 2))) * sum_cubed_diff)  # Sample skewness formula
+  return((non_NAs / ((non_NAs - 1) * (non_NAs - 2))) * sum_cubed_diff) 
 }
 
 
@@ -159,7 +159,10 @@ is_directory <- function(x) {
 #this function checks to see if a directory for x exists.
 
 is_readable <- function(x) file.access(x, 4) == 0
-#Yes, this function still works even if it is written on one line. The need for {} is only required when you are defining a function with more than one expression. In this example, the only expression is file.access(x, 4) == 0. If there were more expressions then {} would've been required for this function to work.
+#Yes, this function still works even if it is written on one line. 
+The need for {} is only required when you are defining a function 
+with more than one expression. In this example, the only expression 
+is file.access(x, 4) == 0. If there were more expressions then {} would've been required for this function to work.
 ```
 
 ## Function naming (for humans and computers)

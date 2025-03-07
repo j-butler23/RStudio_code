@@ -1,0 +1,143 @@
+---
+title: "Loops, Iteration, and Indexing"
+author: "Jack Butler"
+date: "2/21/25"
+format: pdf
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(palmerpenguins)
+```
+
+# 25.4 Plotting Functions
+
+## Problem 1
+
+Write a function that produces a scatterplot of any two given variables, and plots
+loess trend lines for each member of a given categorical variable. Use the penguins
+dataset from the `palmerpenguins` package to test your function on a few combinations of
+variables.
+
+```{r}
+data("penguins")
+
+makeScatterPlot <- function(dataset, x_var, y_var){
+  ggplot(data = dataset, mapping = aes_string(x = x_var, y = y_var)) +
+    geom_point(alpha = 0.5) +
+    geom_smooth(method = "loess", se = FALSE) +
+    labs(x = x_var, y = y_var)
+}
+
+makeScatterPlot(penguins, "bill_length_mm", "bill_depth_mm")
+
+```
+
+# 27 For-loops
+
+Combine your function writing and for loop skills:
+
+## Problem 2
+
+Convert the song “99 bottles of beer on the wall” to a function.
+Generalise to any number of any vessel containing any liquid on any
+surface. For this one, use the `cat()` function to
+join the strings. This is easier than `print(str_c())`.
+
+(You may skip the "constant lines" of the song. How do you handle line breaks and
+word spacing?)
+
+```{r}
+beer_song <- function(n, vessel, liquid, surface){
+  for (i in seq(n, 1, by = -1)) {
+    cat(i, vessel, "of", liquid, "on the", surface, ",", i, vessel, "of", liquid, ".\n")
+    
+    if(i - 1 > 0) {
+      cat("Take one down, pass it around,", i - 1, vessel, "of", liquid, "on the", surface, ".\n\n")
+    } else {
+      cat("Take one down, pass it around, no more,", vessel, "of", liquid, "on the", surface, ".\n\n")
+    }
+  }
+  cat("No more", vessel, "of", liquid, "on the", surface, ", no more", vessel, "of", liquid, ".\n")
+  cat("Go to the store and buy some more,", n, vessel, "of", liquid, "on the", surface, ".\n")
+}
+
+beer_song(4, "bottles", "beer", "wall")
+```
+
+## Problem 3
+
+Here we will work through a useful pattern of code that handles multiple
+data files with the same structure. We will load them all into a list, and
+then in the final step we will collapse that list down into a single table.
+
+```{r}
+paths <- list.files("~/Desktop/Github/RStudio/RStudio_code/Week_6_Loops/PS_6_data/gapminder", pattern = "\\.xlsx$", full.names = TRUE)
+paths
+```
+
+Construct a destination list called `all_tibbles`
+
+```{r}
+all_tibbles <- list()
+print(all_tibbles)
+```
+
+Iterate over all file names, and fill up the list
+
+```{r}
+library(readxl)
+
+for (file in paths) {
+  df <- read_excel(file)
+  all_tibbles <- append(all_tibbles, list(df))
+}
+print(all_tibbles)
+```
+
+Notice that the entries of `all_tibbles` are full tibbles!
+
+```{r}
+all_tibbles[[7]]
+```
+
+Now, `list_rbind()` the list to get a single tibble. This step only
+works if all of the tibbles in the list have the same structure (column
+names and numbers).
+
+```{r}
+combined_tibbles <- list_rbind(all_tibbles)
+```
+
+## Problem 4
+
+This should be a take home exercise.
+
+Print the output of the fizzbuzz() function for the 
+numbers from 1:100, using a for loop. Use the function you wrote last time
+that takes a single integer argument (which you may copy here).
+
+Aside: This full fizzbuzz problem is the infamous test often given in
+interviews for software development jobs.
+
+```{r}
+fizzbuzz <- function(inputNumber){
+    if(inputNumber %% 3 == 0 & inputNumber %% 5 == 0){
+      return("fizzbuzz")
+        } else if(inputNumber %% 3 == 0) {
+          return("fizz")
+        } else if(inputNumber %% 5 == 0){
+          return("buzz")
+        } else {
+          return(as.character(inputNumber))
+        }
+}
+
+
+for (i in 1:100) {
+  print(fizzbuzz(i))
+}
+```

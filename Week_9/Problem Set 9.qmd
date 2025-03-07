@@ -1,0 +1,396 @@
+## 
+
+---
+title: "Problem Set 9: Exploring transcriptome-wide changes using PCA"
+author: "Jack Butler"
+date: "March 7 2025"
+format: pdf
+editor: visual
+---
+
+```{r setup, include=FALSE, message = FALSE}
+knitr::opts_chunk$set(echo = TRUE, rows.print = 10)
+
+# load packages
+library(tidyverse)
+```
+
+## Introduction
+
+This problem set is based on a software carpentry project produced by
+Hugo Tavares and Georg Zeller and maintained by Hugo Tavares. It uses
+data from an experiment included in the [`fission` R/Bioconductor
+package](https://bioconductor.org/packages/release/data/experiment/vignettes/fission/inst/doc/fission.html).
+
+You can access the entire tutorial here
+
+[https://tavareshugo.github.io/data-carpentry-rnaseq](https://tavareshugo.github.io/data-carpentry-rnaseq/)
+
+Suppose that you performed an experiment in which you collected gene
+expression data for:
+
+-   Two yeast strains: wild type (“wt”) and *atf21del* mutant (“mut”)
+
+-   Each has 6 time points of osmotic stress time (0, 15, 30, 60, 120
+    and 180 mins)
+
+-   Three replicates for each strain at each time point
+
+Suppose that a bioinformatician analysed it and provided you with three
+files of data:
+
+-   `sample_info.csv` - information about each sample.
+
+-   `counts_raw.csv` - “raw” read counts for all genes, which gives a
+    measure of the genes’ expression. (these are simply scaled to the
+    size of each library to account for the fact that different samples
+    have more or less total number of reads).
+
+-   `counts_transformed.csv` - normalised read counts for all genes, on
+    a log scale and transformed to correct for a dependency between the
+    mean and the variance. This is a typical approach to dealing with
+    count data. You can learn more about it in the [exploratory data
+    analysis
+    lesson](https://tavareshugo.github.io/data-carpentry-rnaseq/02_rnaseq_exploratory.html)
+    from the Tavares and Zeller
+
+You would now like to understand patterns of variation in gene
+expression across different genotypes, timepoints and repicates. Here,
+you will apply some of the PCA analysis tools that we introduced in
+lecture on Tuesday to do this.
+
+### 1. Read the data
+
+Use `read_csv()` to read the data from "counts_transformed.csv" into a
+variable called **trans_cts**
+
+```{r}
+trans_cts <- read.csv('/Users/jbutler/Desktop/Github/RStudio/RStudio_code/Week_9/counts_transformed.csv')
+```
+
+### 2. Prepare the data for PCA using `prcomp()`
+
+The `prcomp()` function requires a matrix of *numeric* data, where the
+*columns* are the *variables* and each *row* is a *sample* containing
+measurements of each variable.
+
+In our case, we want to treat the expression of each gene as a
+*variable* and cells (3 replicates across 6 time points for control and
+mutant cells) as the *sample*. However, the data table in
+***trans_cts*** lists the measurements of gene expression for each
+(genotype, timepoint, replicate) as columns. Moreover the first column
+contains a *non-numeric* list of the gene names.
+
+Here is some code that converts the data in ***trans_cts*** into a
+matrix called ***pca_matrix*** that is in a suitable form to apply
+prcomp().
+
+```{r}
+pca_matrix <- trans_cts %>% 
+  column_to_rownames("gene") %>% 
+  as.matrix() %>% 
+  t()
+
+```
+
+### 3. A note about matrices
+
+A `matrix` is another type of object in R. Matrices are a bit similar to
+`data.frame`, but they only contain values of a single type, in this
+case numeric values (whereas in a `data.frame` different columns can
+contain different types of data).
+
+In bioinformatics packages you will often have data stored in these
+`matrix` objects. It is therefore useful to know how to access values in
+them and how to convert them to a `data.frame`.
+
+You can access values in a matrix using `[rows, columns]` notation:
+
+```{r}
+pca_matrix[1:10, 1:5]
+```
+
+To convert this matrix into a `tibble` object we can use the function
+`as_tibble()`:
+
+```{r, results=FALSE}
+as_tibble(pca_matrix)
+```
+
+But now we've lost our sample names (which were the row names of the
+matrix)! If we look at the function's help (`?as_tibble`), we can see
+that there's a way to solve this problem:
+
+```{r, results=FALSE}
+as_tibble(pca_matrix, rownames = "sample")
+```
+
+Now you know how to convert a `matrix` to a `data.frame`, which can be a
+very handy trick to have! You will need to make use of this below...
+
+------------------------------------------------------------------------
+
+### 4. Perform PCA
+
+Apply `prcomp()` to your data and store the output in a variable called
+***sample_pca***. **Note:** these data are already scaled, so you need
+not ask `prcomp()` to do this.
+
+```{r}
+sample_pca <- prcomp(pca_matrix, center = TRUE)
+```
+
+Recall from Tuesday's lecture that the `prcomp()` returns a data object
+(now stored in ***sample_pca***) containing three basic types of
+information:
+
+-   **sample_pca\$sdev:** (*Eigenvalues) -* the squares of these values
+    represent the variance explained by each PC. We can use these to
+    calculate the proportion of variance in the original data that each
+    axis explains.
+-   **sample_pca\$rotation:** (the *Eigenvectors* or *Variable
+    loadings*) - these reflect the "weight" that each variable has on a
+    particular PC. These can be thought of as the correlation between
+    the PC and the original variable.
+-   **sample_pca\$x:** (*PC scores)* - these are the coordinates of our
+    samples on the new PC axes
+
+### 5. Examine the variance explained by PCs
+
+The first important question to ask is how many PCs do we have and how
+much variance do they explain. Extract the variance explained by each PC
+from ***sample_pca*** and store in a variable called ***pc_variance***
+
+```{r}
+
+pc_variance <- (sample_pca$sdev)^2
+
+pc_variance
+
+pc_variance_proportion <- pc_variance / sum(pc_variance)
+
+pc_variance_proportion
+```
+
+As in lecture, you could make a Scree plot that shows the fraction of
+the total variance explained by each PC. Let's go one step further and
+make a plot that shows both the fraction of variance explained by each
+PC and the cumulative fraction of the variance explained by the first N
+PCs.
+
+Create a tibble called ***pc_vars*** with four columns: PC = the number
+of each PC, var = the variance explained by each PC, frac_var = the
+fraction of variance explained by each PC, and cum_var = the cumulative
+variance explained by all PCs up to a given PC.
+
+**HINT:** for this last one, you may want to apply the `cumsum()`
+function to frac_var column
+
+```{r}
+pc_vars <- tibble(
+  PC = seq_along(pc_variance),  # Number of each PC
+  var = pc_variance,            # Variance explained by each PC
+  frac_var = pc_variance / sum(pc_variance),  # Fraction of variance explained by each PC
+  cum_var = cumsum(pc_variance / sum(pc_variance))  # Cumulative variance explained
+)
+pc_vars
+
+```
+
+Now use ggplot to produce a [pareto
+chart](https://en.wikipedia.org/wiki/Pareto_chart) that displays both
+the individual and cumulative fractions of the variance explained by the
+PCs. Use geom_col() to display the individual fractions, and
+geom_point() and/or geom_line() to display the cumulative fractions.
+Label the x and y axes appropriately.
+
+```{r}
+library(ggplot2)
+ggplot(pc_vars, aes(x = PC)) +
+  geom_col(aes(y = frac_var), fill = "cyan", width = 0.7) +
+  geom_line(aes(y = cum_var), color = "magenta", size = 1) +
+  geom_point(aes(y = cum_var), color = "magenta", size = 2) +
+  labs(
+    x = "Principal Component (PC)",
+    y = "Fraction of Variance Explained",
+    title = "Pareto Chart of Variance Explained by Principal Components"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)  # Rotate x-axis labels for readability
+  )
+
+```
+
+You can see how successive PCs explain less and less of the total
+variance in the original data. Also note that 36 PCs are enough to
+explain *all* of the variance in our dataset. This makes sense in this
+case since we have 36 biological samples.
+
+### 6. Visualising samples in PC space
+
+Next, we turn to visualising our samples on the new PC coordinate axes.
+Extract the PC scores (coordinates of the measurements with respect to
+the PC axes) from ***sample_pca*** and store them in a variable called
+***pc_scores***
+
+```{r}
+pc_scores <- sample_pca$x
+head(pc_scores)
+
+```
+
+Note that **pc_scores** is a `matrix`, so to use ggplot, you will need
+to convert this matrix to a `data.frame/tibble`. Refer to the section
+above called **A note about matrices** to convert your `matrix` into a
+`tibble` called ***pc_scores*** in a way that captures the gene names as
+the first column of your tibble
+
+```{r}
+pc_scores_tibble <- as_tibble(pc_scores, rownames = "sample")
+head(pc_scores_tibble)
+
+```
+
+Now use ggplot to plot the PC scores as individual points on the first
+two principle component axes
+
+```{r}
+ggplot(pc_scores_tibble, aes(x = PC1, y = PC2)) +
+  geom_point() +
+  labs(
+    title = "PC Scores Plot",
+    x = "Principal Component 1 (PC1)",
+    y = "Principal Component 2 (PC2)"
+  ) +
+  theme_minimal()
+```
+
+This is a very simple plot, but already we can see there is some
+structure in the data, suggesting clusters of samples that are more
+similar to each other.
+
+What we are missing is the information about the individual
+measurements - i.e. the genotype, time, and replicate number. These data
+are stored in the input file called sample_info.csv that your
+bioinformatician collaborator provided. Load sample_info.csv into a
+variable called ***sample_info***.
+
+```{r}
+sample_info <- read_csv('/Users/jbutler/Desktop/Github/RStudio/RStudio_code/Week_9/sample_info.csv')
+```
+
+Note that ***sample_info*** and your tibble called ***pc_scores*** have
+the same number of rows.
+
+Use the `full_join()` function to combine ***pc_scores*** and
+***sample_info*** into a single data table. Use the argument
+`by = "sample"` to keep a single copy of the column called "sample" that
+appears in both data tables.
+
+Then use `ggplot` again to plot the PC scores as individual points on
+the first two principle component axes, but now use shape and color
+aesthetics to distinguish the strain (wt vs mutant) and time of exposure
+(minute) to osmotic stress.
+
+HINT: you may want to use factor(minute) so that your aesthetic assigns
+unique colors to each value of minute
+
+```{r}
+combined_data <- full_join(pc_scores_tibble, sample_info, by = "sample")
+
+ggplot(combined_data, aes(x = PC1, y = PC2, shape = factor(strain), color = factor(minute))) +
+  geom_point(size = 3) +
+  labs(
+    title = "PC Scores Plot with Strain and Time Information",
+    x = "Principal Component 1 (PC1)",
+    y = "Principal Component 2 (PC2)",
+    shape = "Strain", 
+    color = "Time (minutes)"  
+  ) +
+  scale_color_brewer(palette = "Set1") +
+  theme_minimal()
+
+```
+
+------------------------------------------------------------------------
+
+### Exploring correlation between genes and PCs
+
+Finally, you might want to ask: Which genes have the most influence on
+each PC axis? This information is contained in the variable loadings of
+the PCA, which are stored as a matrix in ***sample_pca\$rotations***. As
+you did for the PC scores above, extract the loadings and convert them
+to a tibble called ***pc_loadings***
+
+```{r}
+pc_loadings <- as_tibble(sample_pca$rotation, rownames = "gene")
+head(pc_loadings)
+```
+
+Because we have measurements from 6911 genes, it would be too much to
+visualise all of them at once. Instead, let's try and answer the
+question: "What are the top 10 genes with highest loading on PC1 and
+PC2?"
+
+Use your data transformation and piping skills to do this in a sequence
+of steps. From ***pc_loadings***:
+
+\(1\) select the columns containing gene names and the loadings for PC1
+and PC2
+
+\(2\) use
+`pivot_longer(matches("PC"), names_to = "PC", values_to = "loading")` to
+rearrange the data so that all loading values appear in one column and
+the PC names appear in another
+
+\(3\) use `arrange()` to arrange the data in descending order with
+respect to the absolute loading values
+
+\(4\) use `slice()` to pick off the top ten loading values
+
+\(5\) use `pull()` to extract the data in the gene column as a single
+vector
+
+Store the output of this sequence in a variable called ***top_genes***
+
+```{r}
+top_genes <- pc_loadings %>%
+  select(gene, PC1, PC2) %>%  
+  pivot_longer(matches("PC"), names_to = "PC", values_to = "loading") %>% 
+  arrange(desc(abs(loading))) %>%  
+  slice(1:10) %>%  
+  pull(gene)  
+
+top_genes
+```
+
+Now, use the `filter()` function and the list of gene names in
+***top_genes*** to extract a relevant rows from the ***pc_loadings***
+table
+
+```{r}
+top_loadings <- pc_loadings %>%
+  filter(gene %in% top_genes)
+top_loadings
+```
+
+------------------------------------------------------------------------
+
+Finally, here is some code that plots the top loadings as vectors on the
+PC axes.
+
+```{r, echo=FALSE}
+loadings_plot <- ggplot(top_loadings) +
+  geom_segment(aes(x = 0, y = 0, xend = PC1, yend = PC2), 
+               arrow = arrow(length = unit(0.1, "in")),
+               colour = "brown") +
+  geom_text(aes(x = PC1, y = PC2, label = gene),
+            nudge_y = 0.005, size = 3) +
+  scale_x_continuous(expand = c(0.02, 0.02))
+loadings_plot
+```
+
+------------------------------------------------------------------------
+
+# 

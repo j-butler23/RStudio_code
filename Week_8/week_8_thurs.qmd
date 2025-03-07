@@ -1,0 +1,248 @@
+---
+title: "022525 in class"
+format: html
+editor: visual
+---
+
+# Exploratory Data Analysis
+
+## Read in the data file
+
+```{r}
+library(tidyverse)
+PAR3_data <- read_csv('/Users/jbutler/Desktop/Github/RStudio/RStudio_code/Week_7/PAR3_FL.csv',show_col_types = FALSE)
+```
+
+### Select the lifetime data
+
+```{r}
+
+PAR3_LT = PAR3_data |> 
+  filter(origin == "birth" & fate == "death") |>  
+    select(
+        lifetime,
+        cell,
+        polarity,
+        area,
+    )
+```
+
+### Create a function to convert lifetime distributions to decay curves
+
+```{r}
+
+decay_fun = function(LT_counts) {
+  N = length(LT_counts)
+  decay = vector("integer",N)
+  for(i in seq_along(LT_counts)) {
+    decay[i] = sum(LT_counts[i:N])
+  }
+  return(decay)
+}
+```
+
+### Compute decay curves for each cell and polarity, in counts per unit area
+
+```{r}
+
+decay_by_cell = PAR3_LT |> 
+    group_by(cell,polarity,lifetime) |> 
+      summarize(
+        counts = n()/mean(area)
+      ) |> 
+        mutate(
+          decay = decay_fun(counts)
+        ) 
+
+
+ ggplot(decay_by_cell,aes(y = decay,x = lifetime)) +
+   geom_line(aes(color = polarity, linetype = cell)) +
+   scale_y_continuous(trans = "log10")
+```
+
+### Sum decay curves across all cells for each polarity
+
+```{r}
+
+#extract total areas of anterior and posterior ROIs to use in scaling decay curves
+roi_areas = PAR3_LT |> 
+  group_by(polarity,cell) |> 
+    summarize(
+      meanA = mean(area)
+    ) |> 
+    summarize(
+      area = sum(meanA)
+    )
+
+
+decay_all = PAR3_LT |> 
+      group_by(polarity,lifetime) |> 
+        summarize(
+          counts = n()
+        ) |> 
+          mutate(
+            decay = decay_fun(counts)/roi_areas$area[1]
+          ) 
+      
+ ggplot(decay_all,aes(y = decay,x = lifetime)) +
+   geom_line(aes(color =  polarity)) +
+   scale_y_continuous(trans = "log10")
+```
+
+### Here's the code to fit a double exponential to the decay curves
+
+```{r}
+
+# pick off the anterior decay curve and lifetimes above some cutoff
+decay_A =filter(decay_all, polarity == "anterior" & lifetime > 0.3)
+
+two_exp_fit <- nls(decay ~ N_0*(frac*exp(-k1*lifetime) + (1-frac)*exp(-k2*lifetime)), decay_A, start=list(N_0=47000, k1 = 3, k2 = 1,frac = 0.5))
+
+decay_A = mutate(decay_A, two_exp_model = two_exp_fit$m$predict(decay))
+
+#plot data and two exp fit
+ggplot(decay_A) + 
+  geom_line(aes(x=lifetime,y=decay)) + 
+  geom_line(aes(x=lifetime,y=two_exp_model),color="red") +
+  scale_y_continuous(trans = "log")
+
+```
+
+## Exercises
+
+### 1. Write a function to encapsulate the fitting process
+
+Write a function that takes a tibble with columns named lifetime and decay and a list of named numbers representing the starting parameter values start = list(N_0 = #,k1 = #, k2 = #, frac = #) as inputs, uses nls to fit the two-exp function and returns a list of the four best fit parameters (N0, k1, k2, frac)
+
+```{r}
+function_fit <- function(a_tibble, starting_list){
+  nls_fit <- nls()
+}
+```
+
+### 2. Do a simple comparison of anterior and posterior data
+
+Using the same lifetime cutoff value, fit double exponential functions to the decay curves for anterior and posterior molecules. Use ggplot to display the fits and extract estimates of N0, k1, k2 and frac for each. How do these compare?
+
+```{r}
+
+```
+
+### 3. Sensitivity test on cutoff values
+
+Vary the cutoff value from 0 to 0.5 in small increments. For each value, fit the data to your two-exp model and collect the fitted parameter values in a tibble that contains columns for: (cutoff_value, N0,k1,k2,frac). Make a plot that shoes how each of these predicted values varies with the chosen cutoff
+
+```{r}
+
+```
+
+### 4. Use bootstrap sampling to get confidence intervals
+
+### 4a. Sampling decay curves
+
+Write a block of code that takes the original lifetime data (PAR3_LT) computed above), produces a random sample of trajectory lifetimes with replacement and converts each sample into a sampled decay curve - i.e a tibble containing columns with lifetime and decay values. Your deacy curves should be scaled by the total roi areas defined 5a
+
+```{r}
+
+```
+
+### 4b. Computing confidence intervals on your parameter estimates
+
+Implement a bootstrap sampling scheme in which you smaple the lifetime data 1000 times, fit the two exp model to the sampled data, and store the best fit parameters. Use these data to calculate the mean values and confidence intervals for the fitted parameters for anterior and posterior decay curves.
+
+```{r}
+ 
+```
+
+## Analyse mobilities
+
+### Isolate the mobility data,using pivot_longer to collect dR measurements into a single column)
+
+```{r}
+PAR3_dR = PAR3_data |> 
+  select(
+      cell,
+      polarity,
+      starts_with("dR")
+  ) |> 
+    pivot_longer(
+        cols = starts_with("dR"), 
+        names_to = "frm", 
+        values_to = "dR_100",
+        values_drop_na = TRUE
+    ) |> 
+      mutate(
+        frm = parse_number(frm)
+      )
+```
+
+### Plot the PDF for dR_100
+
+```{r}
+ggplot(PAR3_dR,aes(dR_100,after_stat(density),color = cell,linetype = polarity)) +
+  geom_freqpoly(binwidth = 0.005)
+```
+
+### Define a function to simulate experimental measurements of dr_100 for single molecules undergoing brownian diffusion
+
+```{r}
+    dR_brownian = function(nSamples,D,tau,error)  {
+      rmsd = sqrt(4*D*tau);
+      dxSample = abs(rmsd*rnorm(nSamples) + rnorm(nSamples,sd = error) + rnorm(nSamples,sd = error));
+      dySample = abs(rmsd*rnorm(nSamples) + rnorm(nSamples,sd = error) + rnorm(nSamples,sd = error));
+      dRSample = sqrt(dxSample^2 + dySample^2);
+      return(dRSample)
+    }
+```
+
+### Create a set of dr_100 measurements for simulated brownian diffusion with diffusivity D = 0.12 µm\^2/s
+
+```{r}
+    diff_dR = tibble(dR_100 = dR_brownian(100000,0.12,0.1,0.05))
+```
+
+### Read in a set of measured displacements for PAR-3 oligomers
+
+```{r}
+olig_dR = read_csv('/Users/munroem/Desktop/QBio_2025/olig.csv',show_col_types = FALSE)
+
+olig_dR = olig_dR |>   
+  pivot_longer(
+      cols = starts_with("dR_olig"), 
+      names_to = NULL, 
+      values_to = "dR_100",
+      values_drop_na = TRUE
+  ) 
+
+```
+
+### Overlay histograms of displacements for PAR-3 oligomers, simulated diffusion and single PAR-3 molecules
+
+```{r}
+
+ggplot() +
+  geom_freqpoly(data = filter(PAR3_dR,polarity == "posterior"),aes(dR_100,after_stat(density),color = polarity),binwidth = 0.005)  +
+    geom_freqpoly(data = diff_dR,aes(dR_100,after_stat(density)),color = "blue",binwidth = 0.005) +
+    geom_freqpoly(data = olig_dR,aes(dR_100,after_stat(density)),color = "green",binwidth = 0.005) 
+
+```
+
+## Exercises
+
+### 5. Explore relationship between binding lifetimes and mobilities.
+
+A simple expectation is that the longer lived single molecule binding states are also the lower mobility ones. Try testing this by plotting distributiuons of displacements for only the long-lived tractories or only short-lived trajectories and compare these to the distributions for all trajectories, oligomers and simulated diffusion. Do this separately for anterior and posterior displacements.
+
+```{r}
+
+```
+
+### 6. Explore order of binding events
+
+Our kinetic model scheme assumes that monomers bind first to the membrane and then to one another or to existing oligomers. If so, then a simple prediction is that the mobilities of newly-bound molecules should be higher. Exploit the information in the frm column of PAR3_dR to isolate the dsiplacements for newly-bound molecules.
+
+### Hint: Take a look at the slice functions in R4DS Section 3.5.3. Can you combine slice fnctions with group_by to pick off the displacements associated with newly-bound molecules?
+
+```{r}
+
+```

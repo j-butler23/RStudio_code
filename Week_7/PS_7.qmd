@@ -1,0 +1,287 @@
+---
+title: "Week 7 Problem Set"
+name: "Jack Butler"
+date: "2/28/25"
+format: pdf
+editor: visual
+---
+
+## 
+
+## Michaelis-Menten enzyme kinetics
+
+The Michaelis-Menten equation describes an enzymatic reaction where an enzyme converts a substrate S to a product P. The rate of product formation is called the "velocity" v.
+
+The Michaelis-Menten equation is:
+
+v = v_max \* S / (S + K)
+
+This function has two parametes: K, the concentration at which half-maximal velocity occurs, called the Michaelis constant, and v_max, the maximum velocity.
+
+## 1. Simulate Michaelis-Menten data
+
+A. Write a function that simulates a data set described by the Michaelis-Menten equation. The data points should have normally distributed random noise with standard deviation sigma (sigma is the same for each point).
+
+```{r}
+library(tidyverse)
+
+
+s_list <- c(1:10)
+#want the output to be a table, feeding [s], want the output to be V
+simulate_MMenten <- function(s_list, v_max, K_d, sigma){
+  vresults <- c()
+  for(i in 1:length(s_list)){
+    vresults <- c(vresults, (v_max*s_list[i]/(s_list[i] + K_d)))
+  } 
+  vresults_noise <- vresults + rnorm(n=length(s_list), mean=0, sd=sigma)
+  results <- tibble(s_list, vresults, vresults_noise, errors = sigma)
+  print(results)
+}
+
+simulate_MMenten(s_list, 0.87, 13, 2)
+
+```
+
+B. Make a plot of simulated data with black points and error bars (using geom_errorbar()).
+
+Here, S should vary uniformly between 1 uM and 10 uM in steps of 1 uM. v_max = 10 / s, and K = 4 uM. Let the standard error on each point (sigma) be 1.5 / s.
+
+```{r}
+s_list <- c(1:10)
+practice_data <- simulate_MMenten(s_list, 10, 4, 1.5)
+
+simulated_MMenten_plot <- ggplot(
+  data = practice_data, mapping = aes(x = s_list, y = vresults_noise) 
+  ) + geom_point() + geom_errorbar(aes(ymax = vresults_noise + errors, ymin = vresults_noise - errors))
+simulated_MMenten_plot
+```
+
+## 2. Use nls() to fit the data
+
+Use nls() to fit the Michaelis-Menten function to your simulated data. Make a plot that overlays the best-fit curve in red along with the black data points (with error bars), and plot the residuals between the fit and the data as green points.
+
+```{r}
+nls_fit <- nls(vresults_noise ~ (v_max*s_list/(s_list + K_d)),
+               data = practice_data,
+               start = list(v_max = 8, K_d = 2))
+practice_data$nls <- predict(nls_fit)
+practice_data$residuals <- practice_data$vresults_noise - practice_data$nls
+
+ggplot(
+  practice_data, aes(x = s_list, y = vresults_noise)) +
+  geom_errorbar(
+    aes(ymax = vresults_noise + errors, ymin = vresults_noise - errors)
+) +
+  geom_smooth(aes(x = s_list, y = nls, color = "red")) +
+  geom_point(aes(x = s_list, y = residuals, color = "green"))
+
+
+```
+
+## 3. Statistics over many simulations
+
+A. Incorporate the code you wrote above into a for loop to run the data simulation and fitting 1000 times. Collect the best-fit v_max and K for each simulation into a tibble and make a scatterplot with partially transparent points. Indicate the "ground truth" values with a blue dot
+
+You may need to use *exception handling*, as we described in class, because there is a chance calling nls() will fail. Enclose your call to nls() in a try() function and then test if(class(test) != "try-error") before proceeding to use the results.
+
+```{r}
+num_simulations <- 1000
+s_list <- 1:10
+true_v_max <- 10
+true_K_d <- 4
+sigma <- 1.5
+
+fit_results <- tibble(v_max = numeric(), K_d = numeric())
+
+for (i in 1:num_simulations) {
+  data <- simulate_MMenten(s_list, true_v_max, true_K_d, sigma)
+  
+  fit <- try(nls(vresults_noise ~ (v_max * s_list / (s_list + K_d)), 
+                 data = data, 
+                 start = list(v_max = 8, K_d = 2)), 
+             silent = TRUE)
+  
+  if (!inherits(fit, "try-error")) {
+    params <- coef(fit)
+    fit_results <- fit_results %>% 
+      add_row(v_max = params["v_max"], K_d = params["K_d"])
+  }
+}
+
+ggplot(fit_results, aes(x = v_max, y = K_d)) +
+  geom_point(alpha = 0.3, color = "black") + 
+  geom_point(aes(x = true_v_max, y = true_K_d), color = "blue", size = 3) + 
+  labs(title = "Estimated v_max vs. K_d",
+       x = "Estimated v_max",
+       y = "Estimated K_d") +
+  theme_minimal()
+```
+
+B. What are the mean values of v_max and K from your simulated fits? Calculate the correlation coefficient between the estimates of v_max and K
+
+```{r}
+mean_v_max <- mean(fit_results$v_max, na.rm = TRUE)
+mean_K_d <- mean(fit_results$K_d, na.rm = TRUE)
+
+correlation <- cor(fit_results$v_max, fit_results$K_d, use = "complete.obs")
+
+cat("Mean v_max:", mean_v_max, "\n")
+cat("Mean K_d:", mean_K_d, "\n")
+cat("Correlation coefficient between v_max and K_d:", correlation, "\n")
+```
+
+## 4. Transform to a linear model
+
+A. Rewrite the Michaelis-Menten formula to express 1/v as a function of 1/S.
+
+```{r}
+set.seed(42)
+s_list <- 1:10
+true_v_max <- 10
+true_K_d <- 4
+sigma <- 1.5
+
+data <- simulate_MMenten(s_list, true_v_max, true_K_d, sigma)
+
+data_transformed <- data %>%
+  mutate(inv_S = 1 / s_list,    # 1/S
+         inv_v = 1 / vresults_noise)
+
+
+```
+
+B. Repeat Question 2, but now using this transformation. That is, simulate data, then plot 1/v vs. 1/S. Fit a linear relationship between the two. *For now, ignore the error bars on the points and do an unweighted linear fit.*
+
+```{r}
+linear_fit <- lm(inv_v ~ inv_S, data = data_transformed)
+
+ggplot(data_transformed, aes(x = inv_S, y = inv_v)) +
+  geom_point(color = "black") +  
+  geom_smooth(method = "lm", se = FALSE, color = "red") +  
+  labs(title = "Lineweaver-Burk Plot (1/v vs. 1/S)",
+       x = "1/[S] (1/uM)",
+       y = "1/v (1/s)") +
+  theme_minimal()
+```
+
+## 5. Many simulations to compare the transformed linear fit with the nonlinear fit
+
+Repeat Question 3, but now do a linear fit to the transformed data (1/v vs. 1/S). Make a scatterplot with transparent black points from the nonlinear fit and transparent green points from the linear fit of transformed data. *Use an unweighted linear fit here*. Restrict the axes on the scatterplot to show results between 0 and 20 only for each parameter.
+
+```{r}
+set.seed(42)
+num_simulations <- 1000
+s_list <- 1:10
+true_v_max <- 10
+true_K_d <- 4
+sigma <- 1.5
+
+fit_results_nonlinear <- tibble(v_max = numeric(), K_d = numeric())
+fit_results_linear <- tibble(v_max = numeric(), K_d = numeric())
+
+for (i in 1:num_simulations) {
+  # Simulate data
+  data <- simulate_MMenten(s_list, true_v_max, true_K_d, sigma)
+  
+  ## 1. Nonlinear Fit (nls)
+  fit_nls <- try(nls(vresults_noise ~ (v_max * s_list / (s_list + K_d)), 
+                      data = data, 
+                      start = list(v_max = 8, K_d = 2)), 
+                 silent = TRUE)
+  
+  if (!inherits(fit_nls, "try-error")) {
+    params_nls <- coef(fit_nls)
+    fit_results_nonlinear <- fit_results_nonlinear %>% 
+      add_row(v_max = params_nls["v_max"], K_d = params_nls["K_d"])
+  }
+  
+  data_transformed <- data %>%
+    mutate(inv_S = 1 / s_list,  
+           inv_v = 1 / vresults_noise) %>%
+    filter(!is.infinite(inv_v) & inv_v > 0)  
+  
+  fit_lm <- try(lm(inv_v ~ inv_S, data = data_transformed), silent = TRUE)
+  
+  if (!inherits(fit_lm, "try-error")) {
+    slope <- coef(fit_lm)["inv_S"]
+    intercept <- coef(fit_lm)["(Intercept)"]
+    
+    estimated_v_max <- 1 / intercept
+    estimated_K_d <- slope * estimated_v_max
+    
+    fit_results_linear <- fit_results_linear %>%
+      add_row(v_max = estimated_v_max, K_d = estimated_K_d)
+  }
+}
+
+fit_results_nonlinear <- fit_results_nonlinear %>% mutate(Method = "Nonlinear")
+fit_results_linear <- fit_results_linear %>% mutate(Method = "Linear")
+fit_results_combined <- bind_rows(fit_results_nonlinear, fit_results_linear)
+fit_results_combined <- fit_results_combined %>%
+  mutate(Method = factor(Method, levels = c("Nonlinear", "Linear")))
+
+
+ggplot(fit_results_combined, aes(x = v_max, y = K_d)) +
+  geom_point(aes(color = Method), alpha = 0.3, size = 1.5) +
+  scale_color_manual(values = c("Nonlinear" = "black", "Linear" = "green")) + 
+  geom_point(aes(x = true_v_max, y = true_K_d), color = "blue", size = 3) + 
+  xlim(0, 20) + ylim(0, 20) +  # Restrict axes
+  labs(title = "Comparison of Nonlinear vs. Linear Fit Estimates",
+       x = "Estimated v_max",
+       y = "Estimated K_d") +
+  theme_minimal()
+
+```
+
+## 6. Transforming the error
+
+A. If our measurement of v has uncertainty sigma, what should the uncertainty in 1/v be (assuming small errors)?
+
+```{r}
+#It should be sigma over v^2
+```
+
+B. Repeat Question 4B, but now transform the errors appropriately and include error bars on the plot of 1/v vs. 1/S
+
+```{r}
+data_transformed <- data %>%
+  mutate(inv_S = 1 / s_list,        # 1/[S]
+         inv_v = 1 / vresults_noise, # 1/v (with noise)
+         inv_error = errors / (vresults_noise^2)) %>%  # Transform error using sigma/v^2
+  filter(!is.infinite(inv_v) & inv_v > 0)  # Remove infinite or negative values
+
+# Fit a linear model to the transformed data
+linear_fit <- lm(inv_v ~ inv_S, data = data_transformed)
+
+# Extract slope and intercept
+slope <- coef(linear_fit)["inv_S"]
+intercept <- coef(linear_fit)["(Intercept)"]
+
+# Compute estimated parameters
+estimated_v_max <- 1 / intercept
+estimated_K_d <- slope * estimated_v_max
+
+# Plot with error bars
+ggplot(data_transformed, aes(x = inv_S, y = inv_v)) +
+  geom_point(color = "black") +  # Data points
+  geom_errorbar(aes(ymin = inv_v - inv_error, ymax = inv_v + inv_error), width = 0.05, color = "red") +  # Error bars
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +  # Best-fit line
+  labs(title = "Lineweaver-Burk Plot with Transformed Error",
+       x = "1/[S] (1/uM)",
+       y = "1/v (1/s)") +
+  theme_minimal()
+```
+
+## 7. Many simulations including the weighted fit with transformed error bars
+
+A. Modify your code from Question 5 to carry out the linear fit of 1/v vs. 1/S but now with transformed errors on 1/S. Along with the original black (nonlinear fit), green (unweighted, linear transformation) scatterplots, include a pink scatterplot that has this new fit with transformed errors.
+
+```{r}
+
+```
+
+B. What is the mean of the estimates for v_max and K from the unweighted linear fit and the linear fit with transformed errors? Pretty shocking, right?
+
+```{r}
+
+```
